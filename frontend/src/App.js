@@ -15,6 +15,8 @@ import Ventas from "@/pages/Ventas";
 import Alertas from "@/pages/Alertas";
 import Usuarios from "@/pages/Usuarios";
 
+document.documentElement.classList.toggle("dark", localStorage.getItem("mp-theme") !== "light");
+
 const Loader = () => (
   <div className="min-h-screen grid place-items-center" data-testid="app-loader">
     <div className="h-10 w-10 rounded-full border-4 border-primary border-t-transparent animate-spin" />

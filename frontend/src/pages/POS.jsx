@@ -154,7 +154,7 @@ export default function POS() {
             </button>
           ))}
         </div>
-        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3" data-testid="pos-product-grid">
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3" data-testid="pos-grid">
           {shown.map((p) => <ProductCard key={p.product_id} p={p} onAdd={add} />)}
         </div>
       </div>
