@@ -1,0 +1,197 @@
+{
+  "project_name": "Max Power Business",
+  "app_type": "dashboard / saas_app",
+  "language": "Spanish",
+  "persona": {
+    "role": "E1 Creative Designer & Retail UX Strategist",
+    "archetype": "ARCHETYPE 2: THE PERFORMANCE PRO (Tactical Retail & High-Velocity Supermarket POS)",
+    "tone": "Professional, high-precision, executive clarity with energetic action states",
+    "principles": [
+      "Fusion over Imitation: High-density tactical dashboard mixed with crisp modern POS ergonomics",
+      "Emotion First: Operational confidence, speed under pressure, real-time control for cashiers and managers",
+      "Content is King: Data-first layout, exception-based alerts, instantly scannable cash register & inventory metrics",
+      "Tactical Contrast: High visibility contrast for dark/light themes, clear role-based UI states (Admin/Manager/Cashier)"
+    ]
+  },
+  "design_system": {
+    "theme": {
+      "default_mode": "dark",
+      "allow_toggle": true,
+      "color_archetype": "Performance Pro Retail",
+      "forbidden_colors": ["#1B93A4", "#7351B7"],
+      "forbidden_fonts": ["Space Grotesk", "Inter (for main headings)"]
+    },
+    "typography": {
+      "heading_font": "Barlow Condensed, Outfit, sans-serif",
+      "body_font": "Plus Jakarta Sans, DM Sans, sans-serif",
+      "mono_font": "JetBrains Mono, Source Code Pro, monospace",
+      "hierarchy": {
+        "h1_hero": "text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight uppercase",
+        "h2_section": "text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight",
+        "h3_subsection": "text-lg sm:text-xl font-semibold",
+        "card_heading": "text-base sm:text-lg font-semibold tracking-wide",
+        "body_text": "text-sm sm:text-base leading-relaxed",
+        "table_text": "text-xs sm:text-sm font-medium",
+        "kpi_value": "text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tighter tabular-nums",
+        "badge_label": "text-xs uppercase font-bold tracking-widest"
+      }
+    },
+    "colors": {
+      "dark_theme": {
+        "background": "#090D16",
+        "surface_card": "#111827",
+        "surface_card_elevated": "#1F2937",
+        "border_subtle": "#1F2937",
+        "border_highlight": "#374151",
+        "text_primary": "#F9FAFB",
+        "text_secondary": "#9CA3AF",
+        "text_muted": "#6B7280",
+        "accent_primary": "#2563EB",
+        "accent_primary_hover": "#1D4ED8",
+        "accent_success": "#10B981",
+        "accent_warning": "#F59E0B",
+        "accent_danger": "#EF4444",
+        "accent_gold_cash": "#EAB308"
+      },
+      "light_theme": {
+        "background": "#F8FAFC",
+        "surface_card": "#FFFFFF",
+        "surface_card_elevated": "#F1F5F9",
+        "border_subtle": "#E2E8F0",
+        "border_highlight": "#CBD5E1",
+        "text_primary": "#0F172A",
+        "text_secondary": "#475569",
+        "text_muted": "#64748B",
+        "accent_primary": "#2563EB",
+        "accent_primary_hover": "#1D4ED8",
+        "accent_success": "#059669",
+        "accent_warning": "#D97706",
+        "accent_danger": "#DC2626",
+        "accent_gold_cash": "#CA8A04"
+      }
+    },
+    "layout_strategy": {
+      "dashboard_grid": "MODE B: High Density Grid (grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6)",
+      "pos_layout": "Split-pane: Left section (70% width) for barcode search, product catalog grid, category filters; Right section (30% width) sticky cart summary, cash input, payment method, tax/discount calculation, and process payment CTA",
+      "cash_register_layout": "Two-column ledger: Left panel for session status (apertura/cierre, balance inicial, ventas acumuladas), Right panel for cash movements list (ingresos, retiros, arqueo de caja con diferencia)",
+      "navigation": "Top navigation bar with Max Power logo, real-time date/clock, active store branch indicator, active role badge (Administrador / Gerente / Cajero), search bar, live system alerts indicator, theme toggle, and user profile with Google login/logout action"
+    },
+    "role_permissions": {
+      "Administrador": {
+        "badge": "bg-red-500/10 text-red-500 border-red-500/20",
+        "access": ["Dashboard KPIs", "Ventas completas", "Alertas", "POS Supermercado", "Apertura / Cierre / Arqueo Caja", "Gestión de Productos e Inventarios CRUD", "Gestión de Usuarios y Roles (Crear, Editar, Permisos)"]
+      },
+      "Gerente": {
+        "badge": "bg-amber-500/10 text-amber-500 border-amber-500/20",
+        "access": ["Dashboard KPIs", "Ventas completas", "Alertas", "POS Supermercado", "Apertura / Cierre / Arqueo Caja", "Gestión de Productos e Inventarios (Lectura/Edición de stock)"]
+      },
+      "Cajero": {
+        "badge": "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+        "access": ["POS Supermercado", "Apertura / Cierre de Caja (sesión propia)", "Historial de ventas del turno"]
+      }
+    }
+  },
+  "modules": [
+    {
+      "name": "Auth / Google Login",
+      "route": "/login",
+      "features": [
+        "Google Sign-In simulation / OAuth toggle",
+        "Quick role switchers for testing: Administrador (Carlos Admin), Gerente (María Gerente), Cajero (Juan Cajero)",
+        "Security status indicator and simulated JWT session token store"
+      ]
+    },
+    {
+      "name": "Executive Dashboard",
+      "route": "/",
+      "features": [
+        "Real-time KPIs: Ingresos Hoy ($), Ventas totales, Ticket Promedio ($), Alertas activas de caja/stock",
+        "Interactive Charts: Sales by hour/day (Recharts area/bar), Payment method breakdown (Pie/Donut)",
+        "Quick alert ticker for stockout warnings and cash threshold alerts",
+        "Role-filtered metrics (Admin sees company totals, Cajero sees shift totals)"
+      ]
+    },
+    {
+      "name": "Point of Sale (POS Supermercado)",
+      "route": "/pos",
+      "features": [
+        "Product barcode scanner / search input + category quick tabs (Abarrotes, Lácteos, Bebidas, Enlatados, Limpieza)",
+        "Visual grid of fast-sale items with stock count badge and price tag",
+        "Interactive Cart with quantity increment/decrement, line-item discounts, clear cart",
+        "Payment modal supporting Cash (Efectivo with change calculation), Card (Tarjeta), Transfer (Transferencia)",
+        "Ticket generation / Printable receipt preview popup upon checkout finish"
+      ]
+    },
+    {
+      "name": "Caja & Movimientos (Supermercado Cash Register)",
+      "route": "/caja",
+      "features": [
+        "Active session status header: State (Abierta / Cerrada), Opened at, Initial Cash (Monto Inicial)",
+        "Apertura de caja modal (Set initial float, cashier name, notes)",
+        "Movimientos de caja form (Ingreso extra, Retiro de efectivo, Pago a proveedor)",
+        "Cierre de caja & Arqueo modal (Counted cash input vs System calculated cash = Discrepancy calculation in real-time)",
+        "Historical cash sessions log table"
+      ]
+    },
+    {
+      "name": "Inventario & Productos",
+      "route": "/inventario",
+      "features": [
+        "Product data table with barcode, name, category, cost price, sale price, current stock, low-stock threshold, status badge",
+        "Create / Edit Product dialog with price margin auto-calculation",
+        "Stock adjustment modal (Add stock, stock adjustment with reason)",
+        "Low stock highlight filter button"
+      ]
+    },
+    {
+      "name": "Historial de Ventas",
+      "route": "/ventas",
+      "features": [
+        "Filterable sales table by date range, cashier, payment method, status (Completada, Anulada)",
+        "Sale details drawer showing itemized breakdown, tax total, receipt ID, and cashier signature",
+        "Export to CSV/Excel button simulation",
+        "Annul transaction option (Admin/Manager only with authorization modal)"
+      ]
+    },
+    {
+      "name": "Gestión de Usuarios y Permisos",
+      "route": "/usuarios",
+      "features": [
+        "User list table with avatar, name, email, role badge, last login date, active toggle",
+        "Role permission matrix visualization (Permissions breakdown for Admin, Manager, Cashier)",
+        "Create / Edit user dialog with Google account linking capability"
+      ]
+    },
+    {
+      "name": "Centro de Alertas",
+      "route": "/alertas",
+      "features": [
+        "Stock bajo alerts (Product stock <= minimum threshold)",
+        "Caja alert (Cash box exceeding max limit requiring cash drop, or discrepancy at closing)",
+        "Actionable resolution buttons ('Reorganizar Inventario', 'Registrar Retiro de Caja', 'Marcar Resuelto')"
+      ]
+    }
+  ],
+  "image_urls": {
+    "cashier_checkout": "https://images.unsplash.com/photo-1774978613949-c29cbfe9f862?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2OTV8MHwxfHNlYXJjaHwzfHxzdXBlcm1hcmtldCUyMGNhc2hpZXIlMjByZXRhaWwlMjBzdG9yZSUyMGJ1c2luZXNzJTIwZGFzaGJvYXJkJTIwdGVhbXxlbnwwfHx8fDE3OTE0MTYzMzd8MA&ixlib=rb-4.1.0&q=85",
+    "conveyor_groceries": "https://images.unsplash.com/photo-1752057119009-b6784a9d8dc3?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2OTV8MHwxfHNlYXJjaHwxfHxzdXBlcm1hcmtldCUyMGNhc2hpZXIlMjByZXRhaWwlMjBzdG9yZSUyMGJ1c2luZXNzJTIwZGFzaGJvYXJkJTIwdGVhbXxlbnwwfHx8fDE3OTE0MTYzMzd8MA&ixlib=rb-4.1.0&q=85",
+    "supermarket_stocking": "https://images.unsplash.com/photo-1774978612809-b11695740f7a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2OTV8MHwxfHNlYXJjaHw0fHxzdXBlcm1hcmtldCUyMGNhc2hpZXIlMjByZXRhaWwlMjBzdG9yZSUyMGJ1c2luZXNzJTIwZGFzaGJvYXJkJTIwdGVhbXxlbnwwfHx8fDE3OTE0MTYzMzd8MA&ixlib=rb-4.1.0&q=85",
+    "pos_interaction": "https://images.unsplash.com/photo-1778791979650-7f23360c1b0a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2OTV8MHwxfHNlYXJjaHwyfHxzdXBlcm1hcmtldCUyMGNhc2hpZXIlMjByZXRhaWwlMjBzdG9yZSUyMGJ1c2luZXNzJTIwZGFzaGJvYXJkJTIwdGVhbXxlbnwwfHx8fDE3OTE0MTYzMzd8MA&ixlib=rb-4.1.0&q=85"
+  },
+  "instructions_to_main_agent": [
+    "Ensure all components are written in clean JavaScript (.js / .jsx).",
+    "Add 'data-testid' to EVERY button, input, tab, card, modal, and table row (e.g., data-testid='pos-add-product-btn', data-testid='caja-apertura-submit', data-testid='kpi-ingresos-card').",
+    "Use Lucide-React icons extensively for retail items, currency, checkouts, and alerts.",
+    "Implement Sonner toast notifications for cashier checkout success, inventory updates, caja opening/closing, and authorization errors.",
+    "Persist sample seeded data (Products, Sales, Cash Sessions, System Alerts, Users) in local state or browser localStorage so all actions feel dynamic, real, and interactive.",
+    "Support active role switching directly from header or profile dropdown so the reviewer can instantly test how Cajero view differs from Administrador/Gerente.",
+    "Keep typography tight with Barlow Condensed for numbers & titles, plus clean technical styling for tabular data.",
+    "All interactive UI text MUST be in Spanish."
+  ],
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": {
+    "no_transparent_overlays": "Never use fully transparent header or dropdown backgrounds. Use backdrop-blur-xl with crisp solid or dark glass surfaces.",
+    "data_testid_mandatory": "All interactive and key informational elements MUST include a data-testid attribute.",
+    "responsive_mobile": "POS layout collapses into tabs on small viewports while maintaining high-density tabular visibility on desktop.",
+    "toast_engine": "Use sonner for instant feedback on cash operations, low stock alerts, and role authorization blocks."
+  }
+}
