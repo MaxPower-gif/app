@@ -14,6 +14,7 @@ import Inventario from "@/pages/Inventario";
 import Ventas from "@/pages/Ventas";
 import Alertas from "@/pages/Alertas";
 import Usuarios from "@/pages/Usuarios";
+import Promociones from "@/pages/Promociones";
 
 document.documentElement.classList.toggle("dark", localStorage.getItem("mp-theme") !== "light");
 
@@ -69,6 +70,7 @@ function AppRouter() {
         <Route path="/caja" element={<Guard perm="caja"><Caja /></Guard>} />
         <Route path="/inventario" element={<Guard perm="productos"><Inventario /></Guard>} />
         <Route path="/ventas" element={<Guard perm="ventas"><Ventas /></Guard>} />
+        <Route path="/promociones" element={<Guard perm="promociones"><Promociones /></Guard>} />
         <Route path="/alertas" element={<Guard perm="alertas"><Alertas /></Guard>} />
         <Route path="/usuarios" element={<Guard perm="usuarios"><Usuarios /></Guard>} />
       </Route>

@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-const EMPTY = { barcode: "", name: "", category: "", cost: "", price: "", stock: "", min_stock: "10" };
+const EMPTY = { barcode: "", name: "", category: "", cost: "", price: "", stock: "", min_stock: "10", unit: "pieza" };
 const FIELDS = [["barcode", "Código de barras"], ["name", "Nombre"], ["cost", "Costo", "number"], ["price", "Precio venta", "number"], ["stock", "Stock", "number"], ["min_stock", "Stock mínimo", "number"]];
 
 const ProductDialog = ({ product, cats, onClose, onSaved }) => {
@@ -18,7 +18,7 @@ const ProductDialog = ({ product, cats, onClose, onSaved }) => {
   useEffect(() => { setF(product?.product_id ? { ...product } : EMPTY); }, [product]);
   const margin = f.price && f.cost ? (((f.price - f.cost) / f.price) * 100).toFixed(1) : "—";
   const save = async () => {
-    const body = { ...f, cost: Number(f.cost), price: Number(f.price), stock: parseInt(f.stock || 0), min_stock: parseInt(f.min_stock || 0) };
+    const body = { ...f, cost: Number(f.cost), price: Number(f.price), stock: Number(f.stock || 0), min_stock: Number(f.min_stock || 0), unit: f.unit || "pieza" };
     try {
       if (product.product_id) await api.put(`/products/${product.product_id}`, body); else await api.post("/products", body);
       toast.success("Producto guardado"); onSaved();
@@ -38,6 +38,11 @@ const ProductDialog = ({ product, cats, onClose, onSaved }) => {
               <SelectTrigger data-testid="product-category-select"><SelectValue placeholder="Selecciona" /></SelectTrigger>
               <SelectContent>{cats.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
             </Select></div>
+          <div><Label>Se vende por</Label>
+            <Select value={f.unit || "pieza"} onValueChange={(v) => setF({ ...f, unit: v })}>
+              <SelectTrigger data-testid="product-unit-select"><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="pieza">Pieza</SelectItem><SelectItem value="kg">Peso (kg)</SelectItem></SelectContent>
+            </Select></div>
           <div className="rounded-md bg-secondary p-2"><div className="text-xs text-muted-foreground">Margen</div><div className="font-display text-xl font-bold" data-testid="product-margin">{margin}%</div></div>
         </div>
         <Button onClick={save} disabled={!f.name || !f.barcode || !f.category || !f.price} data-testid="product-save-btn">Guardar</Button>
@@ -50,7 +55,7 @@ const StockDialog = ({ product, onClose, onSaved }) => {
   const [delta, setDelta] = useState("");
   const [reason, setReason] = useState("Recepción de mercancía");
   const save = async () => {
-    try { await api.post(`/products/${product.product_id}/stock`, { delta: parseInt(delta), reason }); toast.success("Stock actualizado"); setDelta(""); onSaved(); }
+    try { await api.post(`/products/${product.product_id}/stock`, { delta: Number(delta), reason }); toast.success("Stock actualizado"); setDelta(""); onSaved(); }
     catch (e) { toast.error(errMsg(e)); }
   };
   return (
@@ -112,7 +117,7 @@ export default function Inventario() {
                     <td className="py-2.5 font-mono-num text-xs text-muted-foreground">{p.barcode}</td>
                     <td className="font-medium">{p.name}</td><td className="text-muted-foreground">{p.category}</td>
                     <td className="text-right font-mono-num">{money(p.cost)}</td><td className="text-right font-mono-num">{money(p.price)}</td>
-                    <td className="text-right font-mono-num font-bold" data-testid={`inv-stock-${p.product_id}`}>{p.stock}</td>
+                    <td className="text-right font-mono-num font-bold" data-testid={`inv-stock-${p.product_id}`}>{p.stock}{p.unit === "kg" ? " kg" : ""}</td>
                     <td><span className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase ${st[1]}`}>{st[0]}</span></td>
                     <td className="text-right whitespace-nowrap">
                       {can("stock") && <Button size="icon" variant="ghost" onClick={() => setStock(p)} data-testid={`inv-stock-btn-${p.product_id}`}><PackagePlus className="h-4 w-4" /></Button>}

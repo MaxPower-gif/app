@@ -13,7 +13,8 @@ from typing import List, Optional, Literal
 from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 
-from seed import seed_database, CATEGORIES
+from seed import seed_database, seed_promotions, CATEGORIES
+from reports import build_monthly_report
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -30,9 +31,9 @@ logger = logging.getLogger(__name__)
 
 ROLE_PERMS = {
     "admin": ["dashboard", "ventas", "ventas_todas", "anular", "alertas", "pos", "caja", "caja_todas",
-              "productos", "productos_editar", "stock", "usuarios"],
+              "productos", "productos_editar", "stock", "usuarios", "promociones", "reportes"],
     "gerente": ["dashboard", "ventas", "ventas_todas", "anular", "alertas", "pos", "caja", "caja_todas",
-                "productos", "stock"],
+                "productos", "stock", "promociones"],
     "cajero": ["ventas", "pos", "caja", "productos"],
     "pendiente": [],
 }
@@ -194,12 +195,13 @@ class ProductIn(BaseModel):
     category: str
     cost: float = Field(ge=0)
     price: float = Field(gt=0)
-    stock: int = Field(ge=0)
-    min_stock: int = Field(ge=0)
+    stock: float = Field(ge=0)
+    min_stock: float = Field(ge=0)
+    unit: Literal["pieza", "kg"] = "pieza"
 
 
 class StockIn(BaseModel):
-    delta: int
+    delta: float
     reason: str
 
 
@@ -263,6 +265,92 @@ async def adjust_stock(product_id: str, body: StockIn, user: dict = Depends(requ
                                          "delta": body.delta, "reason": body.reason,
                                          "user_name": user["name"], "created_at": now_iso()})
     return doc
+
+
+# ---------- Promociones ----------
+class PromoIn(BaseModel):
+    product_id: str
+    type: Literal["descuento", "2x1"]
+    percent: float = Field(default=0, ge=0, le=100)
+    start_date: str
+    end_date: str
+    active: bool = True
+
+
+def promo_label(p):
+    return "2x1" if p["type"] == "2x1" else f"-{p['percent']:g}%"
+
+
+def promo_is_live(p, today):
+    return p["active"] and p["start_date"] <= today <= p["end_date"]
+
+
+async def live_promos():
+    today = datetime.now(timezone.utc).date().isoformat()
+    promos = await db.promotions.find({"active": True, "start_date": {"$lte": today}, "end_date": {"$gte": today}},
+                                      {"_id": 0}).sort("created_at", -1).to_list(500)
+    out = {}
+    for p in promos:
+        out.setdefault(p["product_id"], p)
+    return out
+
+
+def price_line(price, qty, promo):
+    gross = round(price * qty, 2)
+    if not promo:
+        return gross, 0.0, None
+    if promo["type"] == "2x1":
+        disc = round(price * int(qty // 2), 2)
+    else:
+        disc = round(gross * promo["percent"] / 100, 2)
+    return round(gross - disc, 2), disc, {"promo_id": promo["promo_id"], "type": promo["type"], "label": promo_label(promo)}
+
+
+@api.get("/promotions")
+async def list_promotions(_: dict = Depends(require("promociones"))):
+    promos = await db.promotions.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    today = datetime.now(timezone.utc).date().isoformat()
+    return [{**p, "label": promo_label(p), "live": promo_is_live(p, today)} for p in promos]
+
+
+@api.get("/promotions/activas")
+async def active_promotions(_: dict = Depends(require("pos"))):
+    return [{**p, "label": promo_label(p)} for p in (await live_promos()).values()]
+
+
+async def _promo_doc(body: PromoIn):
+    if body.start_date > body.end_date:
+        raise HTTPException(400, "La fecha de inicio debe ser anterior a la fecha de fin")
+    if body.type == "descuento" and body.percent <= 0:
+        raise HTTPException(400, "El porcentaje de descuento debe ser mayor a 0")
+    p = await db.products.find_one({"product_id": body.product_id}, {"_id": 0})
+    if not p:
+        raise HTTPException(404, "Producto no encontrado")
+    return {**body.model_dump(), "product_name": p["name"], "price": p["price"]}
+
+
+@api.post("/promotions")
+async def create_promotion(body: PromoIn, user: dict = Depends(require("promociones"))):
+    doc = {"promo_id": new_id("prm"), **await _promo_doc(body), "created_by": user["name"], "created_at": now_iso()}
+    await db.promotions.insert_one(dict(doc))
+    return {**doc, "label": promo_label(doc)}
+
+
+@api.put("/promotions/{promo_id}")
+async def update_promotion(promo_id: str, body: PromoIn, _: dict = Depends(require("promociones"))):
+    doc = await db.promotions.find_one_and_update({"promo_id": promo_id}, {"$set": await _promo_doc(body)},
+                                                  projection={"_id": 0}, return_document=ReturnDocument.AFTER)
+    if not doc:
+        raise HTTPException(404, "Promoción no encontrada")
+    return {**doc, "label": promo_label(doc)}
+
+
+@api.delete("/promotions/{promo_id}")
+async def delete_promotion(promo_id: str, _: dict = Depends(require("promociones"))):
+    res = await db.promotions.delete_one({"promo_id": promo_id})
+    if not res.deleted_count:
+        raise HTTPException(404, "Promoción no encontrada")
+    return {"ok": True}
 
 
 # ---------- Caja ----------
@@ -360,7 +448,7 @@ async def caja_historial(user: dict = Depends(require("caja"))):
 # ---------- Sales ----------
 class SaleItemIn(BaseModel):
     product_id: str
-    quantity: int = Field(gt=0)
+    quantity: float = Field(gt=0)
 
 
 class SaleIn(BaseModel):
@@ -378,7 +466,7 @@ async def create_sale(body: SaleIn, user: dict = Depends(require("pos"))):
     caja = await open_caja_for(user)
     if not caja:
         raise HTTPException(400, "Debes abrir caja antes de vender")
-    qty = defaultdict(int)
+    qty = defaultdict(float)
     for it in body.items:
         qty[it.product_id] += it.quantity
     products = {p["product_id"]: p for p in
@@ -386,14 +474,24 @@ async def create_sale(body: SaleIn, user: dict = Depends(require("pos"))):
     for pid, q in qty.items():
         if pid not in products:
             raise HTTPException(400, "Producto no encontrado")
+        if products[pid].get("unit", "pieza") == "pieza" and q != int(q):
+            raise HTTPException(400, f"{products[pid]['name']} se vende por pieza")
         if products[pid]["stock"] < q:
             raise HTTPException(400, f"Stock insuficiente: {products[pid]['name']}")
-    items = [{"product_id": pid, "name": products[pid]["name"], "category": products[pid]["category"],
-              "price": products[pid]["price"], "quantity": q, "line_total": round(products[pid]["price"] * q, 2)}
-             for pid, q in qty.items()]
-    subtotal = round(sum(i["line_total"] for i in items), 2)
-    tax = round(subtotal * TAX_RATE, 2)
-    total = round(subtotal + tax, 2)
+    promos = await live_promos()
+    items = []
+    for pid, q in qty.items():
+        p = products[pid]
+        q = round(q, 3)
+        line_total, disc, promo = price_line(p["price"], q, promos.get(pid))
+        items.append({"product_id": pid, "name": p["name"], "category": p["category"], "price": p["price"],
+                      "unit": p.get("unit", "pieza"), "quantity": q, "discount": disc, "promo": promo,
+                      "line_total": line_total})
+    subtotal = round(sum(i["price"] * i["quantity"] for i in items), 2)
+    discount_total = round(sum(i["discount"] for i in items), 2)
+    taxable = round(subtotal - discount_total, 2)
+    tax = round(taxable * TAX_RATE, 2)
+    total = round(taxable + tax, 2)
     received = total
     if body.payment_method == "efectivo":
         if body.cash_received is None or body.cash_received < total:
@@ -410,7 +508,7 @@ async def create_sale(body: SaleIn, user: dict = Depends(require("pos"))):
     counter = await db.counters.find_one_and_update({"_id": "folio"}, {"$inc": {"seq": 1}}, upsert=True,
                                                     return_document=ReturnDocument.AFTER)
     sale = {"sale_id": new_id("vta"), "folio": f"T-{counter['seq']:06d}", "items": items, "subtotal": subtotal,
-            "tax": tax, "total": total, "payment_method": body.payment_method, "cash_received": round(received, 2),
+            "discount_total": discount_total, "tax": tax, "total": total, "payment_method": body.payment_method, "cash_received": round(received, 2),
             "change": round(received - total, 2), "cashier_id": user["user_id"], "cashier_name": user["name"],
             "caja_id": caja["caja_id"], "status": "completada", "created_at": now_iso()}
     await db.sales.insert_one(dict(sale))
@@ -543,6 +641,21 @@ async def dashboard(days: int = 14, tz: int = 0, _: dict = Depends(require("dash
     }
 
 
+# ---------- Reportes ----------
+@api.get("/reports/monthly")
+async def monthly_report(year: int, month: int, user: dict = Depends(require("reportes"))):
+    if not 1 <= month <= 12 or year < 2000:
+        raise HTTPException(400, "Mes o año inválido")
+    start = datetime(year, month, 1, tzinfo=timezone.utc)
+    end = datetime(year + (month == 12), (month % 12) + 1, 1, tzinfo=timezone.utc)
+    rng = {"$gte": start.isoformat(), "$lt": end.isoformat()}
+    sales = await db.sales.find({"created_at": rng, "status": "completada"}, {"_id": 0}).to_list(50000)
+    cajas = await db.cash_sessions.find({"status": "cerrada", "opened_at": rng}, {"_id": 0}).sort("opened_at", 1).to_list(500)
+    pdf = build_monthly_report(sales, cajas, year, month, user["name"])
+    name = f"reporte_ingresos_{year}_{month:02d}.pdf"
+    return Response(pdf, media_type="application/pdf", headers={"Content-Disposition": f'attachment; filename="{name}"'})
+
+
 @api.get("/")
 async def root():
     return {"message": "Max Power Bussines API"}
@@ -565,7 +678,9 @@ async def startup():
     await db.user_sessions.create_index("session_token")
     await db.products.create_index("product_id", unique=True)
     await db.sales.create_index("created_at")
+    await db.promotions.create_index("product_id")
     await seed_database(db, TAX_RATE)
+    await seed_promotions(db)
 
 
 @app.on_event("shutdown")

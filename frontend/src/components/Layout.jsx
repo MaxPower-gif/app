@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { LayoutDashboard, ShoppingCart, Wallet, Package, Receipt, Bell, Users, LogOut, Menu, Sun, Moon, Zap } from "lucide-react";
+import { LayoutDashboard, ShoppingCart, Wallet, Package, Receipt, Bell, Users, LogOut, Menu, Sun, Moon, Zap, Tag } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -13,6 +13,7 @@ const NAV = [
   { to: "/caja", label: "Caja", icon: Wallet, perm: "caja" },
   { to: "/ventas", label: "Ventas", icon: Receipt, perm: "ventas" },
   { to: "/inventario", label: "Inventario", icon: Package, perm: "productos" },
+  { to: "/promociones", label: "Promociones", icon: Tag, perm: "promociones" },
   { to: "/alertas", label: "Alertas", icon: Bell, perm: "alertas" },
   { to: "/usuarios", label: "Usuarios y Roles", icon: Users, perm: "usuarios" },
 ];

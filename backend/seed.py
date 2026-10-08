@@ -32,6 +32,29 @@ def _id(prefix):
     return f"{prefix}_{uuid.uuid4().hex[:10]}"
 
 
+WEIGHT_PRODUCTS = {"Plátano 1kg", "Tomate 1kg", "Manzana Roja 1kg", "Papa 1kg"}
+
+
+async def seed_promotions(db):
+    if await db.promotions.count_documents({}) > 0:
+        return
+    await db.products.update_many({"name": {"$in": list(WEIGHT_PRODUCTS)}}, {"$set": {"unit": "kg"}})
+    await db.products.update_many({"unit": {"$exists": False}}, {"$set": {"unit": "pieza"}})
+    now = datetime.now(timezone.utc).date()
+    specs = [("Refresco Cola 2L", "2x1", 0), ("Galletas Surtidas 500g", "descuento", 15),
+             ("Detergente en Polvo 1kg", "descuento", 20), ("Pan Dulce Pieza", "2x1", 0)]
+    for name, kind, pct in specs:
+        p = await db.products.find_one({"name": name}, {"_id": 0})
+        if not p:
+            continue
+        await db.promotions.insert_one({
+            "promo_id": _id("prm"), "product_id": p["product_id"], "product_name": p["name"], "price": p["price"],
+            "type": kind, "percent": pct, "start_date": (now - timedelta(days=3)).isoformat(),
+            "end_date": (now + timedelta(days=14)).isoformat(), "active": True,
+            "created_by": "Sistema", "created_at": datetime.now(timezone.utc).isoformat(),
+        })
+
+
 async def seed_database(db, tax_rate: float):
     if await db.products.count_documents({}) > 0:
         return

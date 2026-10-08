@@ -33,10 +33,11 @@ const Detail = ({ sale, onClose, onVoided }) => {
           <div className="mt-4 space-y-4 text-sm">
             <div className="text-muted-foreground">{fdate(sale.created_at)} · {sale.cashier_name} · {PAY_LABEL[sale.payment_method]}</div>
             <div className="divide-y divide-border rounded-md border border-border">
-              {sale.items.map((i) => <div key={i.product_id} className="flex justify-between p-2"><span>{i.quantity} × {i.name}</span><span className="font-mono-num">{money(i.line_total)}</span></div>)}
+              {sale.items.map((i) => <div key={i.product_id} className="flex justify-between p-2"><span>{i.quantity}{i.unit === "kg" ? " kg" : ""} × {i.name}{i.promo && <span className="ml-2 rounded bg-emerald-500/15 px-1.5 text-[10px] font-black text-emerald-500">{i.promo.label}</span>}</span><span className="font-mono-num">{money(i.line_total)}</span></div>)}
             </div>
             <div className="space-y-1">
               <div className="flex justify-between"><span>Subtotal</span><span>{money(sale.subtotal)}</span></div>
+              {sale.discount_total > 0 && <div className="flex justify-between text-emerald-500"><span>Descuentos</span><span data-testid="sale-detail-discount">-{money(sale.discount_total)}</span></div>}
               <div className="flex justify-between"><span>IVA</span><span>{money(sale.tax)}</span></div>
               <div className="flex justify-between text-lg font-bold"><span>Total</span><span>{money(sale.total)}</span></div>
             </div>

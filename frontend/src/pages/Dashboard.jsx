@@ -4,6 +4,7 @@ import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, Res
 import { DollarSign, ShoppingBag, Receipt, AlertTriangle, Wallet, Package, TrendingUp, TrendingDown } from "lucide-react";
 import { api, money, fdate, PAY_LABEL } from "@/lib/api";
 import { PageHeader, Panel } from "@/components/RoleBadge";
+import { ReportButton } from "@/components/ReportButton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const COLORS = ["#2563EB", "#10B981", "#EAB308", "#EF4444", "#8B5CF6", "#06B6D4", "#F97316"];
@@ -47,6 +48,7 @@ export default function Dashboard() {
             <TabsTrigger value="30" data-testid="range-30">30 días</TabsTrigger>
           </TabsList>
         </Tabs>
+        <ReportButton />
       </PageHeader>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
