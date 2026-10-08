@@ -22,9 +22,17 @@ Dashboard KPIs/charts, POS, Caja (apertura, movimientos, cierre/arqueo), Inventa
 - Seed: 40 products, ~900 sales over 30 days, 5 closed cash sessions
 - Tested: backend 41/41, frontend flows 100% (iteration_1)
 
+## Implemented (2026-10-08) — Promociones, Reporte PDF, Báscula
+- Promociones (admin/gerente, perm `promociones`): descuento % por producto y 2x1 con vigencia (start/end) y activo; CRUD /api/promotions; /api/promotions/activas para POS
+- POS aplica promos solo al cobrar (backend `price_line`): 2x1 = price*floor(qty/2); descuento = gross*%; venta guarda discount_total, items.discount/promo; IVA sobre neto. Ticket, carrito y detalle de venta muestran descuentos
+- Reporte PDF mensual (solo admin, perm `reportes`): GET /api/reports/monthly?year&month (reportlab+matplotlib): KPIs, ingresos/día, categorías, método de pago, top 10, cajas cerradas, detalle diario. Botón en Dashboard (ReportButton.jsx)
+- Productos por peso: campo `unit` (pieza|kg), stock/cantidad float; calculadora "Báscula" en POS (mg/g/kg/t/oz/lb) agrega kg fraccionales; piezas rechazan fracciones
+- Seed: 4 promos vigentes, 4 frutas/verduras como kg
+- Tested: backend 58/58, frontend flows 100% (iteration_2)
+
 ## Backlog
-- P1: Multi-sucursal, reportes PDF/Excel, recibos imprimibles con formato térmico
-- P2: Descuentos/promociones, proveedores y órdenes de compra, lector de código de barras por cámara
+- P1: Multi-sucursal, exportar Excel, recibos imprimibles con formato térmico
+- P2: Proveedores y órdenes de compra, lector de código de barras por cámara, promos por categoría / combos, envío del reporte PDF por email mensual
 
 ## Next tasks
 - User reviews first version

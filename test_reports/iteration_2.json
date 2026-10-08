@@ -1,0 +1,32 @@
+{
+  "summary": "Iteration 2 validates new features: Promociones CRUD + 2x1/descuento price math, Weight calc (Báscula) & kg products with fractional quantities, Monthly PDF report with RBAC. 58/58 pytest cases pass (added 20 new tests on top of iteration_1 regression). Playwright flows against the public URL covered: /promociones (seeded rows, create, toggle, delete), /pos (promo badges, 2x1 Refresco Cola discount, báscula 750 g→0.75 kg, add kg line, checkout tarjeta, ticket-dialog with ticket-discount+ticket-total), /dashboard report (API returns 72 KB application/pdf starting with %PDF, toast fires), /inventario (kg stock suffix, product-unit-select creates kg product), /ventas (sale detail sheet shows sale-detail-discount -$1.95 and 2x1 label). All passed.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "seed_promotions guards with `count_documents({}) > 0` — if a user deletes the Refresco Cola 2L (or any seed) promo via UI, server restart will NOT re-seed it. Consider upserting by (product_id, created_by='Sistema') to make it idempotent (same remark exists for seed_database in iteration_1).",
+    "Promociones.jsx — PromoDialog does not call window.confirm on the per-row Switch toggle (toggle); the delete button does. The toggle PUT body sends ...p which includes server fields (product_name, price, label, live) along with required ones; the PromoIn Pydantic model ignores extras because of `type: 'descuento'|'2x1'` strictness is OK but a stricter model would 422 on extras — low risk.",
+    "POS.jsx uses hardcoded TAX=0.16 (same note as iteration_1); backend-returned totals are source of truth for sale/ticket, but cart preview could drift.",
+    "server.py create_sale decrements stock, inserts sale, then issues caja_limite alert; good flow. However if cash_received > total for tarjeta/transferencia, server silently uses `received = total` — not a bug but worth documenting.",
+    "WeightCalc.jsx: fmt uses toPrecision(8) then toLocaleString — for very small weights this can show scientific notation on some locales. Low priority.",
+    "reports.py pie chart uses only 3 fixed colors; if more payment methods are added later, color list will cycle incorrectly."
+  ],
+  "updated_files": [
+    "/app/backend/tests/backend_test.py"
+  ],
+  "success_rate": { "backend": "100% (58/58)", "frontend": "100% (all requested flows passed)" },
+  "test_credentials": "Bearer sessions were recreated via mongosh: test_session_admin, test_session_gerente, test_session_cajero, test_session_pendiente. All four users + sessions DELETED at the end (0 remaining).",
+  "seed_data_creation": "Opened a caja for test-cajero-1 to run POS tests; later cleaned up (status=cerrada, user deleted). Created/deleted TEST_UI_KG_Prod via UI, TEST_Prod via pytest. Deleted and re-inserted seed promo for 'Refresco Cola 2L' (2x1) because an earlier UI delete-row-last click removed it; after cleanup the 4 seed promos are intact in DB (confirmed via mongosh).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend test file /app/backend/tests/backend_test.py now has 58 tests. To rerun: `pytest /app/backend/tests/backend_test.py -v`. Required pre-conditions: run the mongosh snippet from /app/auth_testing.md with test_session_admin/gerente/cajero/pendiente users, and open a caja for test-cajero-1 (POST /api/caja/abrir with that bearer). For UI tests, when manipulating the Promociones delete-last button, be aware that the list is sorted by created_at desc so the LAST row is the OLDEST seeded promo (Refresco Cola 2L 2x1 was deleted inadvertently and had to be restored). Prefer deleting the FIRST row (newest = created by test) instead. All critical feature flows work end-to-end.",
+  "rca of the issue": "N/A — no issues found. One self-inflicted test-data issue (deleted seeded Refresco Cola 2L promo via UI test selecting last row) resolved by re-inserting the seed; recommendation noted for seed_promotions idempotency."
+}

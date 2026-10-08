@@ -19,7 +19,7 @@ INK = "#1A1A1A"
 
 
 def money(n):
-    return f"${n:,.2f}"
+    return f"-${abs(n):,.2f}" if n < 0 else f"${n:,.2f}"
 
 
 def _chart(fig):
@@ -141,6 +141,7 @@ def build_monthly_report(sales, cash_sessions, year, month, generated_by):
     if len(rows) == 1:
         rows.append(["Sin cierres en el mes", "", "", "", ""])
     el.append(_table(rows, [3.2 * cm, 5.3 * cm, 3 * cm, 3 * cm, 3 * cm]))
+    el[-1].setStyle(TableStyle([("ALIGN", (1, 1), (1, -1), "LEFT")]))
 
     el.append(Paragraph("Detalle diario", h2))
     rows = [["Día", "Tickets", "Ingresos"]] + [[d.strftime("%d/%m"), str(v["ventas"]), money(v["ingresos"])] for d, v in daily.items()]
